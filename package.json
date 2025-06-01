@@ -1,0 +1,47 @@
+{
+  "name": "visaai",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"No tests configured\" && exit 0",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.7",
+    "@types/formidable": "^3.4.5",
+    "@types/js-cookie": "^3.0.6",
+    "@types/node": "^22.15.21",
+    "@types/react": "^19.1.5",
+    "@types/react-dom": "^19.1.5",
+    "@types/react-input-mask": "^3.0.6",
+    "@types/uuid": "^10.0.0",
+    "eslint": "^9.27.0",
+    "eslint-config-next": "^15.3.2",
+    "formidable": "^3.5.4",
+    "formik": "^2.4.6",
+    "js-cookie": "^3.0.5",
+    "next": "^15.3.2",
+    "prettier": "^3.5.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-dropzone": "^14.3.8",
+    "react-input-mask": "^2.0.4",
+    "react-input-mask-next": "^3.0.0-alpha.12",
+    "tesseract.js": "^6.0.1",
+    "typescript": "^5.8.3",
+    "uuid": "^11.1.0",
+    "yup": "^1.6.1"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.14",
+    "postcss": "^8.4.31",
+    "tailwindcss": "^3.3.0"
+  }
+}

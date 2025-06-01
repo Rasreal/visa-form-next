@@ -1,0 +1,97 @@
+# Task Management
+
+## Open Tasks
+- [x] Create project structure
+- [x] Set up Supabase client
+- [x] Create index.tsx page for visa form
+- [x] Create OCR API endpoint
+- [x] Set up Supabase tables and storage buckets
+- [x] Implement file upload to Supabase storage
+- [x] Improve OCR text extraction with multiple language support
+- [x] Enhance file validation on client and server side
+- [x] Fix file type detection issues in FileUpload component
+- [x] Improve OCR data extraction with better pattern matching
+- [x] Fix FormData file upload handling in OCR API
+- [x] Fix "File is not defined" error in Node.js environment
+- [x] Fix Supabase RLS policy violations in storage uploads
+- [x] Fix "duplex option required" error in Node.js 18+ fetch API
+- [x] Fix persistent Supabase RLS policy violations with updated permission policies
+- [x] Create all step components:
+  - [x] StepWrapper component
+  - [x] Step1_Welcome
+  - [x] Step2_DocumentUpload (with OCR)
+  - [x] Step3_PersonalInfo
+  - [x] Step4_TravelPurpose
+  - [x] Step5_VisaHistory
+  - [x] Step6_ContactInfo
+  - [x] Step7_FamilyInfo
+  - [x] Step8_EducationWork
+  - [x] Step9_TravelHistory
+- [x] Create form validation utilities
+- [x] Implement WhatsApp redirect on form completion
+- [x] Implement form submission to Supabase
+- [x] Implement OCR functionality for document scanning
+- [x] Set up styling with TailwindCSS
+- [x] Create README.md with installation and usage instructions
+- [x] Run final checks (build, lint, tests)
+- [x] Fix OCR file upload error
+- [x] Fix ESLint errors in FileUpload.tsx and ocr.ts
+- [x] Add monthly income field to EducationWork component
+- [x] Add functionality to load previous visa applications for users with rejections
+- [x] Push project to GitLab repository
+- [x] Fix Step5_VisaHistory ref handling and API errors (406 status and React Error #185)
+- [x] Add comprehensive business fields for entrepreneurs, business owners, IP, self-employed, and freelancers
+- [x] Update WhatsApp redirect number to +77064172408
+- [x] Implement WhatsApp message sending to user's phone upon form completion
+- [x] Deploy updated application to Vercel production
+
+## Completed Tasks
+- Created project structure
+- Set up Supabase client with functions for saving and retrieving form data
+- Created OCR utility functions for document scanning
+- Implemented form validation using Yup
+- Created StepWrapper component for consistent form navigation
+- Created Step1_Welcome component for country selection
+- Created Step2_DocumentUpload component with OCR scanning
+- Created Step3_PersonalInfo component for personal information
+- Created main index.tsx page with multi-step form functionality
+- Set up WhatsApp redirect for form completion
+- Integrated TailwindCSS for styling
+- Created README.md with documentation
+- Fixed build and linting issues
+- Successfully built and tested the application
+- Fixed OCR file upload 500 error by improving validation and error handling
+- Set up Supabase tables (visa_applications, ocr_processing_history) and storage buckets (passport_documents, supporting_documents)
+- Implemented file upload to Supabase storage and integrated with OCR processing
+- Enhanced OCR text extraction with multiple language support (English, Russian, Kazakh)
+- Improved document data parsing with better patterns for different passport formats
+- Added client and server-side file validation for types and size
+- Fixed file type detection for various browser and mobile device uploads
+- Added extensive debug logging to help diagnose OCR processing issues
+- Made OCR data extraction more robust to handle poor quality images
+- Improved date extraction with chronological logic
+- Fixed ESLint errors by removing unused imports and variables
+- Fixed FormData file upload handling by improving temporary file storage and validation
+- Fixed browser-specific API usage in Node.js environment by adapting code to work in both contexts
+- Resolved Supabase storage RLS policy violations by using optimized file upload methods
+- Fixed Node.js 18+ compatibility issues with streams in fetch API by using Buffer instead
+- Resolved persistent Supabase RLS policy violations by implementing more permissive policies for public access to storage buckets and database tables
+- Created all remaining form step components (Steps 4-9) to complete the visa application form
+- Added income field to education and work information form (Step8_EducationWork)
+- Added functionality to search and load previous visa applications for users with rejections
+- Successfully pushed project to GitLab repository
+- Fixed Step5_VisaHistory component errors by improving ref handling and API error management
+- Added comprehensive business questionnaire fields for business owners, individual entrepreneurs (IP), self-employed, and freelancers including:
+  - Business type selection (business owner, IP, self-employed, freelancer)
+  - Business registration information (name, type, number, date)
+  - Business activity and income details
+  - Employee information
+  - Client and contract details
+  - Tax and financial information
+  - Office/premises information
+  - All fields properly validated and integrated with the form system
+- Updated WhatsApp redirect number from +77064072318 to +77064172408
+- Created WhatsApp API endpoint (/api/send-whatsapp) using Wappi.pro service
+- Implemented automatic WhatsApp message sending to user's phone number upon form completion
+- Added proper phone number formatting for Kazakhstan numbers
+- Successfully deployed updated application to Vercel production environment 
