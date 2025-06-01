@@ -42,6 +42,7 @@ export default function Home() {
   const [agentId, setAgentId] = useState('');
   const [isFormCompleted, setIsFormCompleted] = useState(false);
   const [, setIsNewUser] = useState(false);
+  const [isDeployedEnvironment, setIsDeployedEnvironment] = useState(false);
   const [formData, setFormData] = useState<VisaFormData>({
     // Step 1
     visaDestination: '',
@@ -647,6 +648,7 @@ export default function Home() {
             onSubmit={handleStep2Submit}
             uploadedFiles={uploadedFiles}
             setUploadedFiles={setUploadedFiles}
+            deployedMode={isDeployedEnvironment}
           />
         );
       case 3:
@@ -843,6 +845,95 @@ export default function Home() {
         );
     }
   };
+
+  // Load user data and form state on component mount
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        setIsLoading(true);
+        setErrorMessage('');
+
+        // Detect if we're running in a deployed environment
+        const isDeployed = typeof window !== 'undefined' && 
+          (window.location.hostname !== 'localhost' && 
+           !window.location.hostname.includes('127.0.0.1'));
+        setIsDeployedEnvironment(isDeployed);
+        console.log('Running in deployed environment:', isDeployed);
+
+        // Check if localStorage is available
+        if (!isLocalStorageAvailable()) {
+          setErrorMessage('Local storage is not available. Please enable cookies and local storage in your browser.');
+          setIsLoading(false);
+          return;
+        }
+
+        // Get or create agent ID
+        const urlAgentId = typeof router.query.agent_id === 'string' ? router.query.agent_id : undefined;
+        const currentAgentId = getOrCreateAgentId(urlAgentId);
+        setAgentId(currentAgentId);
+
+
+        // Test Supabase connection first
+        const connectionTest = await testSupabaseConnection();
+        if (!connectionTest.success) {
+          console.error('Supabase connection failed:', connectionTest.error);
+          setErrorMessage('Ошибка подключения к базе данных. Проверьте настройки Supabase.');
+          return;
+        }
+
+        // Check if table needs to be created
+        if (connectionTest.needsTableCreation) {
+          console.warn('Table visa_applications does not exist. Please create it in Supabase.');
+          setErrorMessage('Таблица базы данных не найдена. Обратитесь к администратору.');
+          return;
+        }
+
+        // Get or create user data
+        const { data, error, isNewUser: newUser } = await getOrCreateUserData(currentAgentId);
+
+        if (error) {
+          console.error('Error getting/creating user data:', error);
+          setErrorMessage('Не удалось загрузить данные пользователя.');
+          return;
+        }
+
+        if (data) {
+          // Check if form is completed
+          if (data.whatsapp_redirected) {
+            setIsFormCompleted(true);
+            return;
+          }
+
+          // Load existing form data and step
+          if (data.form_data && Object.keys(data.form_data).length > 0) {
+            setFormData(data.form_data as VisaFormData);
+          }
+
+          // Set step from database or localStorage
+          const dbStep = data.step_status || 1;
+          const localStep = getCurrentStep();
+          const currentStep = Math.max(dbStep, localStep);
+
+          setStep(currentStep);
+          setCurrentStep(currentStep); // Update localStorage
+
+          if (data.uploaded_files) {
+            setUploadedFiles(data.uploaded_files);
+          }
+
+          setIsNewUser(newUser);
+        }
+
+      } catch (error) {
+        console.error('Failed to initialize user session:', error);
+        setErrorMessage('Не удалось инициализировать сессию пользователя.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadUserData();
+  }, [router.query.agent_id]);
 
   if (isLoading) {
     return (

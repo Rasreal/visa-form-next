@@ -15,6 +15,7 @@ interface Step2Props {
   onSubmit: (values: Step2Data) => void;
   uploadedFiles: { [key: string]: string };
   setUploadedFiles: (files: { [key: string]: string }) => void;
+  deployedMode?: boolean;
 }
 
 const Step2_DocumentUpload = forwardRef<Step2Ref, Step2Props>(({
@@ -22,6 +23,7 @@ const Step2_DocumentUpload = forwardRef<Step2Ref, Step2Props>(({
   onSubmit,
   uploadedFiles,
   setUploadedFiles,
+  deployedMode = false,
 }, ref) => {
   const [formValues, setFormValues] = useState(initialValues);
   const formikRef = useRef<FormikProps<Step2Data>>(null);
@@ -33,28 +35,32 @@ const Step2_DocumentUpload = forwardRef<Step2Ref, Step2Props>(({
     setIsDocumentUploaded(hasUploads);
   }, [uploadedFiles]);
 
+  // Add a function to check if we have enough data to proceed
+  const canProceed = () => {
+    // We can proceed if at least one document is uploaded
+    return Object.keys(uploadedFiles).length > 0;
+  };
+
   useImperativeHandle(ref, () => ({
     submitForm: () => {
       if (formikRef.current) {
         formikRef.current.submitForm();
       }
     },
-    isValid: (formikRef.current?.isValid && isDocumentUploaded) ?? false,
+    // Allow proceeding if we have uploads, even if form validation fails
+    isValid: canProceed() || (formikRef.current?.isValid && isDocumentUploaded) || false,
   }));
 
   const handleDocumentExtract = (documentType: string, data: ExtractedDocumentData, filePath?: string) => {
-    console.log(`Document ${documentType} extracted successfully:`, { data, filePath });
+    console.log(`Document ${documentType} extracted:`, { 
+      data: data ? 'present' : 'missing', 
+      filePath: filePath ? 'present' : 'missing',
+      dataFields: data ? Object.keys(data) : []
+    });
     
-    // Only update form values if data is actually extracted
-    if (data && Object.keys(data).length > 0) {
-      setFormValues((prev) => ({
-        ...prev,
-        ...data,
-      }));
-    }
-
-    // Even if OCR fails to extract data, track that the file was uploaded successfully
+    // Always mark as uploaded if we have a file path, even if OCR extraction failed
     if (filePath) {
+      // Update uploaded files tracking
       setUploadedFiles({
         ...uploadedFiles,
         [documentType]: filePath,
@@ -62,6 +68,18 @@ const Step2_DocumentUpload = forwardRef<Step2Ref, Step2Props>(({
       
       // Show success message
       setIsDocumentUploaded(true);
+      
+      // Only update form values if data is actually extracted
+      if (data && Object.keys(data).length > 0) {
+        setFormValues((prev) => ({
+          ...prev,
+          ...data,
+        }));
+      } else {
+        console.log('No OCR data extracted, but file was uploaded successfully');
+      }
+    } else {
+      console.warn(`Document ${documentType} upload failed: No file path returned`);
     }
   };
 
@@ -97,12 +115,14 @@ const Step2_DocumentUpload = forwardRef<Step2Ref, Step2Props>(({
           label="Загрузите скан/фото паспорта"
           name="passport"
           onExtract={(data, filePath) => handleDocumentExtract('passport', data, filePath)}
+          deployedMode={deployedMode}
         />
 
         <FileUpload
           label="Загрузите скан/фото удостоверения личности"
           name="idCard"
           onExtract={(data, filePath) => handleDocumentExtract('idCard', data, filePath)}
+          deployedMode={deployedMode}
         />
       </div>
 

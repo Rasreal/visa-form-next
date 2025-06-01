@@ -106,9 +106,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       }
       
       if (!data || data.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'No OCR data found for this agent ID'
+        return res.status(200).json({
+          success: true,
+          message: 'No OCR data found for this agent ID',
+          data: null
         });
       }
       
@@ -347,17 +348,33 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       }
       console.log('File uploaded successfully:', filePath);
 
-      // Log OCR processing to database
-      const { error: insertError } = await supabase.from('ocr_processing_history').insert({
-        agent_id: agentId,
-        document_type: 'passport',
-        document_path: filePath,
-        processing_status: 'success',
-        extracted_data: extractedData,
-      });
+      // Try to log OCR processing to database, but don't fail if it doesn't work
+      try {
+        console.log('Attempting to log OCR processing to database...');
+        const { error: insertError } = await supabase.from('ocr_processing_history').insert({
+          agent_id: agentId,
+          document_type: 'passport',
+          document_path: filePath,
+          processing_status: 'success',
+          extracted_data: extractedData,
+        });
 
-      if (insertError) {
-        console.warn('Failed to log OCR processing:', insertError);
+        if (insertError) {
+          console.warn('Failed to log OCR processing to database:', insertError);
+          console.log('Database error details:', {
+            errorMessage: insertError.message,
+            errorCode: insertError.code,
+            errorDetails: insertError.details,
+            errorHint: insertError.hint
+          });
+          // Continue anyway - don't fail the whole upload because of database logging issues
+        } else {
+          console.log('Successfully logged OCR processing to database');
+        }
+      } catch (dbError) {
+        // Log the error but don't fail the request
+        console.error('Database operation failed:', dbError);
+        // Continue processing
       }
 
       // Clean up temp file

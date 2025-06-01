@@ -337,7 +337,10 @@ export const extractDocumentData = async (fileOrPath: File | string, fileType?: 
     const text = await extractTextFromImage(fileOrPath, fileType);
     if (!text || text.trim().length === 0) {
       console.error('No text extracted from document');
-      throw new Error('No text could be extracted from the document');
+      // Return empty object instead of throwing error
+      return { 
+        rawText: 'No text could be extracted from the document'
+      };
     }
     
     const parsedData = parsePassportData(text);
