@@ -346,10 +346,10 @@ export default function Home() {
 
     const timeout = setTimeout(() => {
       autoSaveFormData(currentFormData, currentStep);
-    }, 1000); // Save after 2 seconds of inactivity
+    }, 1000); // Save after 1 second of inactivity
 
     setAutoSaveTimeout(timeout);
-  }, [autoSaveFormData]); // Убираем autoSaveTimeout из зависимостей чтобы избежать бесконечного цикла
+  }, [autoSaveFormData, autoSaveTimeout]);
 
   // Helper function to update form data and trigger auto-save
   const updateFormData = (newData: Partial<VisaFormData>) => {
@@ -382,7 +382,7 @@ export default function Home() {
         debouncedAutoSave(formData, step);
       }
     }
-  }, [formData, agentId, step, isLoading, uploadedFiles]); // Убираем debouncedAutoSave из зависимостей
+  }, [formData, agentId, step, isLoading, uploadedFiles, debouncedAutoSave]);
 
   // Cleanup timeout on unmount
   useEffect(() => {

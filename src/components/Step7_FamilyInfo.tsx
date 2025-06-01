@@ -1,4 +1,4 @@
-import React, { forwardRef, useImperativeHandle, useRef, useEffect } from 'react';
+import React, { forwardRef, useImperativeHandle, useRef } from 'react';
 import { Formik, Form, Field, ErrorMessage, FieldArray, FormikProps } from 'formik';
 import { step7Schema } from '../utils/validations';
 import { Step7Data } from '../utils/types';
@@ -36,11 +36,7 @@ const Step7_FamilyInfo = forwardRef<Step7Ref, Step7Props>(({ initialValues, onSu
         validationSchema={step7Schema}
         onSubmit={onSubmit}
       >
-        {({ values, isValid: _isValid, setFieldValue }) => {
-          // Note: For users who selected "Незамужем/холост" in Step 3,
-          // we still want to allow them to provide spouse information
-          
-          return (
+        {({ values, isValid: _isValid }) => (
           <Form>
             <div className="grid grid-cols-1 gap-4">
               {/* Информация о супруге */}
@@ -412,90 +408,99 @@ const Step7_FamilyInfo = forwardRef<Step7Ref, Step7Props>(({ initialValues, onSu
               {/* Информация о родственниках в США */}
               <div className="mb-6 p-4 border border-gray-200 rounded-lg">
                 <div className="mb-4">
-                  <div className="flex items-center mb-2">
-                    <Field
-                      type="checkbox"
-                      id="hasRelativesInUSA"
-                      name="hasRelativesInUSA"
-                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="hasRelativesInUSA" className="ml-2 block text-gray-700 font-medium">
-                      Есть ли у вас родные братья/сестры или другие близкие родственники в США?
+                  <label htmlFor="hasRelativesInUSA" className="block text-gray-700 font-medium mb-2">
+                    У вас есть родственники в США?
+                  </label>
+                  <div className="mt-2">
+                    <label className="inline-flex items-center mr-4">
+                      <Field type="radio" name="hasRelativesInUSA" value="true" className="form-radio" />
+                      <span className="ml-2">Да</span>
+                    </label>
+                    <label className="inline-flex items-center">
+                      <Field type="radio" name="hasRelativesInUSA" value="false" className="form-radio" />
+                      <span className="ml-2">Нет</span>
                     </label>
                   </div>
-
-                  {values.hasRelativesInUSA && (
-                    <div className="mt-4">
-                      <FieldArray name="relatives">
-                        {({ push, remove }) => (
-                          <div>
-                            {values.relatives && values.relatives.length > 0 ? (
-                              values.relatives.map((relative, index) => (
-                                <div key={index} className="flex flex-col md:flex-row gap-4 mb-4">
-                                  <div className="flex-1">
-                                    <Field
-                                      type="text"
-                                      name={`relatives.${index}.name`}
-                                      placeholder="ФИО родственника"
-                                      className="form-input"
-                                    />
-                                    <ErrorMessage
-                                      name={`relatives.${index}.name`}
-                                      component="div"
-                                      className="text-red-500 text-sm mt-1"
-                                    />
-                                  </div>
-                                  <div className="flex-1">
-                                    <Field
-                                      type="text"
-                                      name={`relatives.${index}.relationship`}
-                                      placeholder="Кем приходится (брат, сестра и т.д.)"
-                                      className="form-input"
-                                    />
-                                    <ErrorMessage
-                                      name={`relatives.${index}.relationship`}
-                                      component="div"
-                                      className="text-red-500 text-sm mt-1"
-                                    />
-                                  </div>
-                                  <button
-                                    type="button"
-                                    className="bg-red-500 text-white px-3 py-2 rounded"
-                                    onClick={() => remove(index)}
-                                  >
-                                    Удалить
-                                  </button>
-                                </div>
-                              ))
-                            ) : (
-                              <div className="text-gray-500 mb-2">Нет добавленных родственников</div>
-                            )}
-                            <button
-                              type="button"
-                              className="bg-blue-500 text-white px-4 py-2 rounded"
-                              onClick={() => push({ name: '', relationship: '' })}
-                            >
-                              Добавить родственника
-                            </button>
-                          </div>
-                        )}
-                      </FieldArray>
-                      {values.relatives && values.relatives.length === 0 && (
-                        <ErrorMessage
-                          name="relatives"
-                          component="div"
-                          className="text-red-500 text-sm mt-1"
-                        />
-                      )}
-                    </div>
-                  )}
+                  <ErrorMessage name="hasRelativesInUSA" component="div" className="text-red-500 text-sm mt-1" />
                 </div>
+
+                {values.hasRelativesInUSA === true && (
+                  <div className="mb-4">
+                    <label className="block text-gray-700 font-medium mb-2">
+                      Информация о родственниках в США
+                    </label>
+                    <p className="text-sm text-gray-500 mb-2">
+                      Пожалуйста, укажите всех родственников, которые легально находятся в США (имеют статус &ldquo;Green Card&rdquo; или являются гражданами США)
+                    </p>
+
+                    <FieldArray name="relatives">
+                      {({ push, remove }) => (
+                        <div>
+                          {values.relatives && values.relatives.length > 0 ? (
+                            values.relatives.map((relative, index) => (
+                              <div key={index} className="flex flex-col md:flex-row gap-4 mb-4">
+                                <div className="flex-1">
+                                  <Field
+                                    type="text"
+                                    name={`relatives.${index}.name`}
+                                    placeholder="ФИО родственника"
+                                    className="form-input"
+                                  />
+                                  <ErrorMessage
+                                    name={`relatives.${index}.name`}
+                                    component="div"
+                                    className="text-red-500 text-sm mt-1"
+                                  />
+                                </div>
+                                <div className="flex-1">
+                                  <Field
+                                    type="text"
+                                    name={`relatives.${index}.relationship`}
+                                    placeholder="Кем приходится (брат, сестра и т.д.)"
+                                    className="form-input"
+                                  />
+                                  <ErrorMessage
+                                    name={`relatives.${index}.relationship`}
+                                    component="div"
+                                    className="text-red-500 text-sm mt-1"
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  className="bg-red-500 text-white px-3 py-2 rounded"
+                                  onClick={() => remove(index)}
+                                >
+                                  Удалить
+                                </button>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-gray-500 mb-2">Нет добавленных родственников</div>
+                          )}
+                          <button
+                            type="button"
+                            className="bg-blue-500 text-white px-4 py-2 rounded"
+                            onClick={() => push({ name: '', relationship: '' })}
+                          >
+                            Добавить родственника
+                          </button>
+                        </div>
+                      )}
+                    </FieldArray>
+                    {values.relatives && values.relatives.length === 0 && (
+                      <ErrorMessage
+                        name="relatives"
+                        component="div"
+                        className="text-red-500 text-sm mt-1"
+                      />
+                    )}
+                  </div>
+                )}
               </div>
 
             </div>
           </Form>
-          );
-        }}
+        )}
       </Formik>
     </div>
   );

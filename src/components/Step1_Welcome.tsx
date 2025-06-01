@@ -35,6 +35,13 @@ const Step1_Welcome = forwardRef<Step1Ref, Step1Props>(({ initialValues, onSubmi
     },
     isValid: formikRef.current?.isValid ?? false,
   }));
+  
+  // Update selectedCountry when formikRef.current.values.visaDestination changes
+  useEffect(() => {
+    if (formikRef.current?.values.visaDestination) {
+      setSelectedCountry(formikRef.current.values.visaDestination);
+    }
+  }, [formikRef.current?.values?.visaDestination]);
 
   return (
     <div className="text-center">
@@ -50,61 +57,54 @@ const Step1_Welcome = forwardRef<Step1Ref, Step1Props>(({ initialValues, onSubmi
         validationSchema={step1Schema}
         onSubmit={onSubmit}
       >
-        {({ values, setFieldValue, isValid: _isValid, dirty: _dirty }) => {
-          // Update selectedCountry when values.visaDestination changes
-          useEffect(() => {
-            setSelectedCountry(values.visaDestination);
-          }, [values.visaDestination]);
+        {({ values, setFieldValue, isValid: _isValid, dirty: _dirty }) => (
+          <Form>
+            <div className="max-w-md mx-auto">
+              <Field
+                as="select"
+                id="visaDestination"
+                name="visaDestination"
+                className="block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-200 focus:ring-opacity-50"
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                  const value = e.target.value;
+                  setFieldValue('visaDestination', value);
+                  setSelectedCountry(value);
+                  if (value !== 'other') {
+                    setFieldValue('otherVisaDestination', '');
+                  }
+                }}
+              >
+                {countryOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Field>
+              <ErrorMessage
+                name="visaDestination"
+                component="div"
+                className="mt-2 text-red-600 text-sm"
+              />
 
-          return (
-            <Form>
-              <div className="max-w-md mx-auto">
-                <Field
-                  as="select"
-                  id="visaDestination"
-                  name="visaDestination"
-                  className="block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-200 focus:ring-opacity-50"
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                    const value = e.target.value;
-                    setFieldValue('visaDestination', value);
-                    setSelectedCountry(value);
-                    if (value !== 'other') {
-                      setFieldValue('otherVisaDestination', '');
-                    }
-                  }}
-                >
-                  {countryOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </Field>
-                <ErrorMessage
-                  name="visaDestination"
-                  component="div"
-                  className="mt-2 text-red-600 text-sm"
-                />
-
-                {selectedCountry === 'other' && (
-                  <div className="mt-4">
-                    <Field
-                      type="text"
-                      id="otherVisaDestination"
-                      name="otherVisaDestination"
-                      placeholder="Введите название страны"
-                      className="block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-200 focus:ring-opacity-50"
-                    />
-                    <ErrorMessage
-                      name="otherVisaDestination"
-                      component="div"
-                      className="mt-2 text-red-600 text-sm"
-                    />
-                  </div>
-                )}
-              </div>
-            </Form>
-          );
-        }}
+              {selectedCountry === 'other' && (
+                <div className="mt-4">
+                  <Field
+                    type="text"
+                    id="otherVisaDestination"
+                    name="otherVisaDestination"
+                    placeholder="Введите название страны"
+                    className="block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-200 focus:ring-opacity-50"
+                  />
+                  <ErrorMessage
+                    name="otherVisaDestination"
+                    component="div"
+                    className="mt-2 text-red-600 text-sm"
+                  />
+                </div>
+              )}
+            </div>
+          </Form>
+        )}
       </Formik>
     </div>
   );
