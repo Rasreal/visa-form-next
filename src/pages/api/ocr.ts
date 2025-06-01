@@ -371,6 +371,40 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         } else {
           console.log('Successfully logged OCR processing to database');
         }
+        
+        // Save to the new ocr_data table
+        console.log('Saving OCR data to ocr_data table...');
+        const { error: ocrDataError } = await supabase.from('ocr_data').insert({
+          agent_id: agentId,
+          document_type: fileKey, // Using the document type from the file upload field name (passport or idCard)
+          document_path: filePath,
+          passport_number: extractedData.passportNumber,
+          name: extractedData.name,
+          surname: extractedData.surname,
+          date_of_birth: extractedData.dateOfBirth,
+          citizenship: extractedData.citizenship,
+          passport_issue_date: extractedData.passportIssueDate,
+          passport_expiry_date: extractedData.passportExpiryDate,
+          iin: extractedData.iin,
+          id_number: extractedData.idNumber,
+          gender: extractedData.gender,
+          nationality: extractedData.nationality,
+          birth_place: extractedData.birthPlace,
+          raw_text: extractedData.rawText
+        });
+
+        if (ocrDataError) {
+          console.warn('Failed to save OCR data to ocr_data table:', ocrDataError);
+          console.log('Database error details:', {
+            errorMessage: ocrDataError.message,
+            errorCode: ocrDataError.code,
+            errorDetails: ocrDataError.details,
+            errorHint: ocrDataError.hint
+          });
+          // Continue anyway - don't fail the whole upload because of database logging issues
+        } else {
+          console.log('Successfully saved OCR data to ocr_data table');
+        }
       } catch (dbError) {
         // Log the error but don't fail the request
         console.error('Database operation failed:', dbError);
@@ -404,6 +438,16 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           processing_status: 'error',
           error_message: fileError instanceof Error ? fileError.message : 'Unknown file processing error',
         });
+        
+        // Also log to ocr_data table
+        await supabase.from('ocr_data').insert({
+          agent_id: agentId || 'unknown',
+          document_type: fileKey || 'unknown',
+          document_path: 'failed_upload',
+          raw_text: fileError instanceof Error ? fileError.message : 'Unknown file processing error',
+          created_at: new Date().toISOString()
+        });
+        console.log('Error logged to ocr_data table');
       } catch (logError) {
         console.error('Failed to log OCR error:', logError);
       }

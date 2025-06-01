@@ -84,6 +84,46 @@ CREATE TABLE IF NOT EXISTS public.ocr_processing_history (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
+-- Create OCR data table to store processed document data
+CREATE TABLE IF NOT EXISTS public.ocr_data (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  agent_id TEXT NOT NULL,
+  document_type TEXT NOT NULL,
+  document_path TEXT NOT NULL,
+  passport_number TEXT,
+  name TEXT,
+  surname TEXT, 
+  date_of_birth TEXT,
+  citizenship TEXT,
+  passport_issue_date TEXT,
+  passport_expiry_date TEXT,
+  iin TEXT,
+  id_number TEXT,
+  gender TEXT,
+  nationality TEXT,
+  birth_place TEXT,
+  raw_text TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Create index for faster searches by agent_id in OCR data
+CREATE INDEX IF NOT EXISTS idx_ocr_data_agent_id ON public.ocr_data(agent_id);
+
+-- Enable RLS on OCR data
+ALTER TABLE public.ocr_data ENABLE ROW LEVEL SECURITY;
+
+-- Create policy for read access to OCR data
+CREATE POLICY "Read OCR data by agent_id"
+  ON public.ocr_data
+  FOR SELECT
+  USING (auth.uid()::text = agent_id);
+
+-- Create policy for insert access to OCR data
+CREATE POLICY "Insert OCR data"
+  ON public.ocr_data
+  FOR INSERT
+  WITH CHECK (auth.uid()::text = agent_id);
+
 -- Create index for faster searches by agent_id in OCR history
 CREATE INDEX IF NOT EXISTS idx_ocr_history_agent_id ON public.ocr_processing_history(agent_id);
 
