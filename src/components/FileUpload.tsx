@@ -181,9 +181,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
             
             // Consider a response successful if:
             // 1. response.ok is true (status 200-299) AND result.success is true
-            // 2. OR we have a filePath (file was uploaded successfully)
-            // This handles cases where the file upload worked but database operations might fail
-            const isSuccessful = (response.ok && result.success) || 
+            // 2. AND we have a filePath (file was uploaded successfully)
+            // This ensures we only proceed if data was actually saved to the database
+            const isSuccessful = (response.ok && result.success) && 
                                 (result.filePath && result.filePath.length > 0);
                                 
             if (!isSuccessful && result.message !== "No OCR data found for this agent ID") {
@@ -196,7 +196,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
                 return uploadWithRetry(retryCount + 1, maxRetries);
               }
               
-              throw new Error(result.message || `Upload failed with status ${response.status}`);
+              throw new Error(result.message || result.details || `Upload failed with status ${response.status}`);
             }
             
             // Return the result even if it's a "No OCR data found" message

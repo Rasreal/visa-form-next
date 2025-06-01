@@ -1,17 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // API configuration for Next.js
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb',
-    },
-    responseLimit: '10mb',
-  },
+  
   // Ensure that the API routes can properly handle file uploads
   serverRuntimeConfig: {
     PROJECT_ROOT: __dirname,
+    // API limits moved here from the invalid 'api' key
+    bodyParserLimit: '10mb',
+    responseLimit: '10mb',
   },
+  
   // Configure headers to handle CORS properly
   async headers() {
     return [

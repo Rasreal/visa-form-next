@@ -3,6 +3,7 @@ import { IncomingForm, Fields } from 'formidable';
 import fs from 'fs';
 import path from 'path';
 import { extractDocumentData } from '../../utils/ocr';
+import { supabase } from '../../utils/supabase';
 import { v4 as uuidv4 } from 'uuid';
 
 // This enables file uploads in the API route by disabling the built-in body parser
@@ -92,13 +93,46 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       });
     }
     
-    // Always return success with empty data for GET requests
-    // This is a simplified version that doesn't use a database
-    return res.status(200).json({
-      success: true,
-      message: 'Simple OCR API - No data stored in database',
-      data: null
-    });
+    const agentId = Array.isArray(agentIdParam) ? agentIdParam[0] : agentIdParam;
+    
+    try {
+      console.log('Fetching OCR data for agent ID:', agentId);
+      
+      // Fetch the latest OCR processing data for this agent
+      const { data, error } = await supabase
+        .from('ocr_processing_history')
+        .select('*')
+        .eq('agent_id', agentId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+        
+      if (error) {
+        console.error('Database query error:', error);
+        throw error;
+      }
+      
+      if (!data || data.length === 0) {
+        console.log('No OCR data found for agent ID:', agentId);
+        return res.status(200).json({
+          success: true,
+          message: 'No OCR data found for this agent ID',
+          data: null
+        });
+      }
+      
+      console.log('Found OCR data for agent ID:', agentId);
+      return res.status(200).json({
+        success: true,
+        data: data[0]
+      });
+    } catch (error) {
+      console.error('Error fetching OCR data:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve OCR data',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
   }
   
   // Continue with POST handling
@@ -228,6 +262,48 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       // Generate a fake file path since we're not actually storing the file
       const fakePath = `${agentId}/${uuidv4()}-${file.originalFilename || 'document.jpg'}`;
 
+      // Insert the OCR data into the database
+      console.log('Inserting OCR data into database...');
+      const { data: insertedData, error: insertError } = await supabase
+        .from('ocr_processing_history')
+        .insert({
+          agent_id: agentId,
+          document_type: 'passport',
+          document_path: fakePath,
+          processing_status: 'success',
+          extracted_data: extractedData || {},
+          created_at: new Date().toISOString()
+        })
+        .select();
+
+      // Handle database insertion errors
+      if (insertError) {
+        console.error('Database insertion error:', insertError);
+        console.log('Database error details:', {
+          errorMessage: insertError.message,
+          errorCode: insertError.code,
+          errorDetails: insertError.details,
+          errorHint: insertError.hint
+        });
+        
+        // Clean up temp file
+        try {
+          fs.unlinkSync(file.filepath);
+        } catch (cleanupError) {
+          console.warn('Failed to clean up temp file after database error:', cleanupError);
+        }
+        
+        return res.status(500).json({
+          success: false,
+          error: 'Database error',
+          message: 'Failed to save OCR data to database',
+          details: insertError.message
+        });
+      }
+      
+      console.log('OCR data successfully inserted into database:', 
+        insertedData ? `ID: ${insertedData[0]?.id}` : 'No ID returned');
+
       // Clean up temp file
       try {
         fs.unlinkSync(file.filepath);
@@ -235,16 +311,31 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         console.warn('Failed to clean up temp file:', cleanupError);
       }
 
-      // Return the extracted data along with the fake file path
+      // Return the extracted data along with the file path
       return res.status(200).json({
         success: true,
         data: extractedData,
         filePath: fakePath,
         agentId,
-        message: 'Document processed successfully (simple mode)'
+        message: 'Document processed successfully and data saved to database'
       });
     } catch (fileError) {
       console.error('File processing error:', fileError);
+
+      // Try to log the error to the database for tracking
+      try {
+        await supabase.from('ocr_processing_history').insert({
+          agent_id: agentId || 'unknown',
+          document_type: 'passport',
+          document_path: 'failed_upload',
+          processing_status: 'error',
+          error_message: fileError instanceof Error ? fileError.message : 'Unknown file processing error',
+          created_at: new Date().toISOString()
+        });
+        console.log('Error logged to database');
+      } catch (logError) {
+        console.error('Failed to log error to database:', logError);
+      }
 
       // Clean up temp file if it exists
       if (file && file.filepath) {
