@@ -57,7 +57,7 @@ const Step1_Welcome = forwardRef<Step1Ref, Step1Props>(({ initialValues, onSubmi
         validationSchema={step1Schema}
         onSubmit={onSubmit}
       >
-        {({ values, setFieldValue, isValid: _isValid, dirty: _dirty }) => (
+        {({ setFieldValue, isValid: _isValid, dirty: _dirty }) => (
           <Form>
             <div className="max-w-md mx-auto">
               <Field

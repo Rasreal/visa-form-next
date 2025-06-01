@@ -323,33 +323,33 @@ export default function Home() {
   }, [router.query.agent_id]);
 
   // Auto-save function with debouncing
-  const autoSaveFormData = async (currentFormData: VisaFormData, currentStep: number) => {
-    if (!agentId || agentId.trim() === '') return;
-
-    try {
-      setIsAutoSaving(true);
-      await saveFormData(currentFormData, agentId, currentStep, uploadedFiles);
-      setLastSaved(new Date());
-    } catch (error) {
-      console.error('Auto-save failed:', error);
-      // Don't show error to user for auto-save failures
-    } finally {
-      setIsAutoSaving(false);
-    }
-  };
-
-  // Debounced auto-save
   const debouncedAutoSave = useCallback((currentFormData: VisaFormData, currentStep: number) => {
     if (autoSaveTimeout) {
       clearTimeout(autoSaveTimeout);
     }
+
+    // Define autoSaveFormData inside useCallback
+    const autoSaveFormData = async (formData: VisaFormData, step: number) => {
+      if (!agentId || agentId.trim() === '') return;
+
+      try {
+        setIsAutoSaving(true);
+        await saveFormData(formData, agentId, step, uploadedFiles);
+        setLastSaved(new Date());
+      } catch (error) {
+        console.error('Auto-save failed:', error);
+        // Don't show error to user for auto-save failures
+      } finally {
+        setIsAutoSaving(false);
+      }
+    };
 
     const timeout = setTimeout(() => {
       autoSaveFormData(currentFormData, currentStep);
     }, 1000); // Save after 1 second of inactivity
 
     setAutoSaveTimeout(timeout);
-  }, [autoSaveFormData, autoSaveTimeout]);
+  }, [agentId, uploadedFiles, setIsAutoSaving, setLastSaved, setAutoSaveTimeout]);
 
   // Helper function to update form data and trigger auto-save
   const updateFormData = (newData: Partial<VisaFormData>) => {

@@ -56,7 +56,7 @@ const Step7_FamilyInfo = forwardRef<Step7Ref, Step7Props>(({ initialValues, onSu
                     </label>
                   </div>
                   <div className="text-sm text-gray-500 italic">
-                    Примечание: Если вы ранее выбрали "Незамужем/холост", но хотите указать информацию о бывшем супруге, 
+                    Примечание: Если вы ранее выбрали &ldquo;Незамужем/холост&rdquo;, но хотите указать информацию о бывшем супруге, 
                     пожалуйста, отметьте этот пункт.
                   </div>
                 </div>
