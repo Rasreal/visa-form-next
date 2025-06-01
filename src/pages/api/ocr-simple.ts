@@ -148,7 +148,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
   try {
 
-    console.log("process.env.VERCEL",process.env.VERCEL);
+    const isVercel = process.env.VERCEL === 'true';
+
     // Modified form configuration for serverless environment compatibility
     const form = new IncomingForm({
       keepExtensions: true,
@@ -156,7 +157,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       maxFileSize: MAX_FILE_SIZE,
       allowEmptyFiles: false,
       // Use system temp directory for serverless compatibility (Vercel)
-      uploadDir: process.env.VERCEL ? '/tmp' : path.join(process.cwd(), 'tmp'),
+      uploadDir: isVercel ? '/tmp' : path.join(process.cwd(), 'tmp'),
       filename: (_name, _ext, part) => {
         // Generate unique filename to avoid conflicts
         const uniqueFilename = `${Date.now()}-${uuidv4()}`;
@@ -166,7 +167,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     });
 
     // Only create tmp directory in local development, not in serverless environment
-    if (!process.env.VERCEL) {
+    if (!isVercel) {
       const tmpDir = path.join(process.cwd(), 'tmp');
       if (!fs.existsSync(tmpDir)) {
         fs.mkdirSync(tmpDir, { recursive: true });

@@ -107,7 +107,14 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
         const agentId = getAgentId();
 
-        console.log('vercel', process.env.VERCEL);
+        console.log('vercel123', process.env.VERCEL);
+
+        const isVercel = process.env.VERCEL === 'true';
+
+        console.log("isVercel", isVercel);
+
+
+        const isDeployed = process.env.DEPLOYED === 'true';
         // Ensure the file has a proper name
         const fileName = file.name || `document.${file.type.split('/')[1] || 'jpg'}`;
 
@@ -131,7 +138,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
           try {
             // Use the simplified endpoint when in deployed mode
 
-            const endpoint = process.env.DEPLOYED ? '/api/ocr-simple' : '/api/ocr';
+            const endpoint = isDeployed ? '/api/ocr-simple' : '/api/ocr';
             // Create URL with agentId as query parameter
             const url = agentId ? `${endpoint}?agentId=${agentId}` : endpoint;
             console.log(`Uploading to ${url}, attempt ${retryCount + 1}/${maxRetries + 1}...`);
