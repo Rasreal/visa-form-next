@@ -84,30 +84,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
       setUploadedFile(file);
 
       try {
-        // Create a new FormData instance
-        const formData = new FormData();
-
-        // Ensure the file has a proper name
-        const fileName = file.name || `document.${file.type.split('/')[1] || 'jpg'}`;
-
-        // Create a new File object with a guaranteed name if needed
-        const fileToUpload = file.name ? file : new File(
-          [file],
-          fileName,
-          { type: file.type || 'image/jpeg' }
-        );
-
-        // Log what we're sending
-        console.log('Sending to server:', {
-          fieldName: name,
-          fileName: fileToUpload.name,
-          fileType: fileToUpload.type,
-          fileSize: `${(fileToUpload.size / (1024 * 1024)).toFixed(2)} MB`
-        });
-
-        // Add file to form data with field name
-        formData.append(name, fileToUpload);
-
         // Get agent ID from localStorage or cookies
         const getAgentId = () => {
           // First try localStorage
@@ -128,43 +104,53 @@ const FileUpload: React.FC<FileUploadProps> = ({
         };
 
         const agentId = getAgentId();
-        
-        // First check server health before attempting upload
-        try {
-          console.log('Checking server health...');
-          const healthCheckResponse = await fetch('/api/debug-server');
-          const healthData = await healthCheckResponse.json();
-          console.log('Server health check:', healthData.success ? 'OK' : 'FAILED');
-        } catch (healthError) {
-          console.warn('Server health check failed:', healthError);
-          // Continue despite health check failure
-        }
 
-        // Upload retry function
-        const uploadWithRetry = async (uploadUrl: string, retryCount = 0, maxRetries = 3) => {
+        // Ensure the file has a proper name
+        const fileName = file.name || `document.${file.type.split('/')[1] || 'jpg'}`;
+
+        // Create a new File object with a guaranteed name if needed
+        const fileToUpload = file.name ? file : new File(
+          [file],
+          fileName,
+          { type: file.type || 'image/jpeg' }
+        );
+
+        // Log what we're sending
+        console.log('Sending to server:', {
+          fieldName: name,
+          fileName: fileToUpload.name,
+          fileType: fileToUpload.type,
+          fileSize: `${(fileToUpload.size / (1024 * 1024)).toFixed(2)} MB`
+        });
+
+        // Upload retry function with proper POST method
+        const uploadWithRetry = async (retryCount = 0, maxRetries = 3) => {
           try {
-            console.log(`Uploading to ${uploadUrl}, attempt ${retryCount + 1}/${maxRetries + 1}...`);
+            // Create URL with agentId as query parameter
+            const url = agentId ? `/api/ocr?agentId=${agentId}` : '/api/ocr';
+            console.log(`Uploading to ${url}, attempt ${retryCount + 1}/${maxRetries + 1}...`);
             
-            // Create a fresh copy of the form data for each attempt
-            const freshFormData = new FormData();
-            freshFormData.append(name, fileToUpload);
+            // Create a fresh FormData for each attempt
+            const formData = new FormData();
+            formData.append(name, fileToUpload);
             
-            const response = await fetch(uploadUrl, {
+            // Make POST request with FormData - DO NOT set Content-Type header
+            const response = await fetch(url, {
               method: 'POST',
-              body: freshFormData,
+              body: formData,
             });
             
-            // Check if response is not JSON (could be HTML error page)
+            // Check if response is not JSON
             const contentType = response.headers.get('content-type');
             
             if (!contentType || !contentType.includes('application/json')) {
               console.error('Server returned non-JSON response type:', contentType);
               
-              // Try to get the response text to see what went wrong
+              // Get the response text to see what went wrong
               const responseText = await response.text();
               console.error('Non-JSON response body excerpt:', responseText.substring(0, 200) + '...');
               
-              // For HTML responses, try to extract error message from it
+              // For HTML responses, try to extract error message
               let errorMessage = 'Server returned non-JSON response';
               if (responseText.includes('<title>')) {
                 const titleMatch = responseText.match(/<title>(.*?)<\/title>/i);
@@ -176,13 +162,14 @@ const FileUpload: React.FC<FileUploadProps> = ({
               // If we have retries left, try again after a delay
               if (retryCount < maxRetries) {
                 console.log(`Retrying upload (${retryCount + 2}/${maxRetries + 1}) after delay...`);
-                await new Promise(resolve => setTimeout(resolve, 2000)); // Longer delay for retries
-                return uploadWithRetry(uploadUrl, retryCount + 1, maxRetries);
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                return uploadWithRetry(retryCount + 1, maxRetries);
               }
               
               throw new Error(errorMessage);
             }
             
+            // Parse JSON response
             const result = await response.json();
             
             if (!response.ok || !result.success) {
@@ -192,7 +179,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
               if (retryCount < maxRetries) {
                 console.log(`Retrying upload (${retryCount + 2}/${maxRetries + 1}) after error...`);
                 await new Promise(resolve => setTimeout(resolve, 2000));
-                return uploadWithRetry(uploadUrl, retryCount + 1, maxRetries);
+                return uploadWithRetry(retryCount + 1, maxRetries);
               }
               
               throw new Error(result.message || `Upload failed with status ${response.status}`);
@@ -204,49 +191,30 @@ const FileUpload: React.FC<FileUploadProps> = ({
             if (retryCount < maxRetries) {
               console.log(`Retrying upload (${retryCount + 2}/${maxRetries + 1}) after error:`, err);
               await new Promise(resolve => setTimeout(resolve, 2000));
-              return uploadWithRetry(uploadUrl, retryCount + 1, maxRetries);
+              return uploadWithRetry(retryCount + 1, maxRetries);
             }
             
             throw err;
           }
         };
         
-        // First try a simple test upload to diagnose any issues
-        try {
-          console.log('Testing upload with simple endpoint first...');
-          const testResult = await uploadWithRetry('/api/test-upload');
-          console.log('Test upload result:', testResult);
-        } catch (testError) {
-          console.error('Test upload error:', testError);
-          // We'll continue with the real upload despite test failure
-        }
-        
-        // Now try the actual OCR upload
-        const url = agentId ? `/api/ocr?agentId=${agentId}` : '/api/ocr';
+        // Execute the upload with retry logic
         console.log('Sending file to OCR server:', fileToUpload.name);
+        const result = await uploadWithRetry();
         
-        try {
-          const result = await uploadWithRetry(url);
-          
-          // Store the agent ID if it was generated by the server
-          if (result.agentId && !agentId) {
-            localStorage.setItem('agentId', result.agentId);
-            // Also set cookie for backward compatibility
-            Cookies.set('agentId', result.agentId, { expires: 7 });
-          }
-
-          // Set the uploaded file state and clear any errors
-          setUploadedFile(file);
-          setError(null);
-
-          // Pass both extracted data and file path
-          onExtract(result.data, result.filePath);
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Failed to upload and process document');
-          console.error('File upload error:', err);
-          // Reset the uploaded file on error
-          setUploadedFile(null);
+        // Store the agent ID if it was generated by the server
+        if (result.agentId && !agentId) {
+          localStorage.setItem('agentId', result.agentId);
+          // Also set cookie for backward compatibility
+          Cookies.set('agentId', result.agentId, { expires: 7 });
         }
+
+        // Set the uploaded file state and clear any errors
+        setUploadedFile(file);
+        setError(null);
+
+        // Pass both extracted data and file path to parent component
+        onExtract(result.data, result.filePath);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to upload and process document');
         console.error('File upload error:', err);

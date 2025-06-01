@@ -72,7 +72,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   
   // Set CORS headers for all responses
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
   // Handle CORS preflight requests
@@ -80,6 +80,53 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     return res.status(200).end();
   }
   
+  // Handle GET requests - for retrieving OCR data by agentId
+  if (req.method === 'GET') {
+    const agentIdParam = req.query.agentId;
+    if (!agentIdParam) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Missing agentId parameter' 
+      });
+    }
+    
+    const agentId = Array.isArray(agentIdParam) ? agentIdParam[0] : agentIdParam;
+    
+    try {
+      // Fetch the latest OCR processing data for this agent
+      const { data, error } = await supabase
+        .from('ocr_processing_history')
+        .select('*')
+        .eq('agent_id', agentId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+        
+      if (error) {
+        throw error;
+      }
+      
+      if (!data || data.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'No OCR data found for this agent ID'
+        });
+      }
+      
+      return res.status(200).json({
+        success: true,
+        data: data[0]
+      });
+    } catch (error) {
+      console.error('Error fetching OCR data:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve OCR data',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+  
+  // Continue with existing POST handling
   if (req.method !== 'POST') {
     console.error(`OCR API: Method ${req.method} not allowed`);
     return res.status(405).json({ success: false, message: `Method ${req.method} not allowed` });
