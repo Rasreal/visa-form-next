@@ -17,7 +17,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   label,
   name,
   maxSizeMB = 10,
-  deployedMode = false,
+  deployedMode = true,
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -107,6 +107,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
         const agentId = getAgentId();
 
+        console.log('vercel', process.env.VERCEL);
         // Ensure the file has a proper name
         const fileName = file.name || `document.${file.type.split('/')[1] || 'jpg'}`;
 
@@ -129,7 +130,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
         const uploadWithRetry = async (retryCount = 0, maxRetries = 3) => {
           try {
             // Use the simplified endpoint when in deployed mode
-            const endpoint = deployedMode ? '/api/ocr-simple' : '/api/ocr';
+
+            const endpoint = process.env.DEPLOYED ? '/api/ocr-simple' : '/api/ocr';
             // Create URL with agentId as query parameter
             const url = agentId ? `${endpoint}?agentId=${agentId}` : endpoint;
             console.log(`Uploading to ${url}, attempt ${retryCount + 1}/${maxRetries + 1}...`);

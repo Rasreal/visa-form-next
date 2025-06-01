@@ -147,6 +147,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   });
 
   try {
+
+    console.log("process.env.VERCEL",process.env.VERCEL);
     // Modified form configuration for serverless environment compatibility
     const form = new IncomingForm({
       keepExtensions: true,
@@ -261,6 +263,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
       // Generate a fake file path since we're not actually storing the file
       const fakePath = `${agentId}/${uuidv4()}-${file.originalFilename || 'document.jpg'}`;
+
+      console.log('File path:', fakePath);
+      console.log('File exists?', fs.existsSync(fakePath));
+
 
       // Insert the OCR data into the database
       console.log('Inserting OCR data into database...');
