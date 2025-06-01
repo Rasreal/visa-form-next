@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { IncomingForm } from 'formidable';
+import { IncomingForm, Fields } from 'formidable';
 import fs from 'fs';
 import path from 'path';
 import { extractDocumentData } from '../../utils/ocr';
@@ -138,7 +138,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     console.log('Parsing form data...');
-    const formData: { fields: any; files: ProcessedFiles } = await new Promise((resolve, reject) => {
+    const formData: { fields: Fields; files: ProcessedFiles } = await new Promise((resolve, reject) => {
       form.parse(req, (err, fields, files) => {
         if (err) {
           console.error('Form parsing error:', err);
@@ -197,10 +197,32 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       });
     }
 
+    // Try to determine file type from extension if MIME type is generic
+    const fileType = getFileType(file);
+    console.log('Detected file type:', fileType);
+
+    // Validate file type - be more permissive
+    if (!ALLOWED_MIME_TYPES.includes(fileType)) {
+      console.error('Simple OCR API: Invalid file type', { mimetype: fileType });
+
+      // Clean up temp file
+      try {
+        fs.unlinkSync(file.filepath);
+      } catch (cleanupError) {
+        console.warn('Failed to clean up temp file:', cleanupError);
+      }
+
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid file type',
+        message: `File type ${fileType} is not supported. Please upload a JPG, PNG, or PDF file.`
+      });
+    }
+
     try {
       // Extract document data using OCR directly from filepath
       console.log('Processing document with OCR...');
-      const extractedData = await extractDocumentData(file.filepath, getFileType(file));
+      const extractedData = await extractDocumentData(file.filepath, fileType);
       console.log('OCR extraction complete');
 
       // Generate a fake file path since we're not actually storing the file

@@ -350,7 +350,7 @@ export default function Home() {
     }, 1000); // Save after 1 second of inactivity
 
     setAutoSaveTimeout(timeout);
-  }, [agentId, uploadedFiles]);
+  }, [agentId, uploadedFiles, autoSaveTimeout]);
 
   // Helper function to update form data and trigger auto-save
   const updateFormData = (newData: Partial<VisaFormData>) => {
