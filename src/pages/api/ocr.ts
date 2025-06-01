@@ -7,19 +7,22 @@ import { supabase } from '../../utils/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { uploadDocumentToStorage } from '../../utils/supabase-storage';
 
+// This enables file uploads in the API route by disabling the built-in body parser
 export const config = {
   api: {
     bodyParser: false,
   },
 };
 
+type ProcessedFile = {
+  filepath: string;
+  originalFilename?: string;
+  mimetype?: string;
+  size?: number;
+};
+
 type ProcessedFiles = {
-  [key: string]: {
-    filepath: string;
-    originalFilename?: string;
-    mimetype?: string;
-    size?: number;
-  };
+  [key: string]: ProcessedFile | ProcessedFile[];
 };
 
 // Allowed MIME types - expanded list to be more permissive
@@ -38,7 +41,7 @@ const ALLOWED_MIME_TYPES = [
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 // Helper to get the correct file type
-const getFileType = (file: ProcessedFiles[string]): string => {
+const getFileType = (file: ProcessedFile): string => {
   // Use mimetype if it exists
   if (file.mimetype) {
     return file.mimetype;
@@ -65,8 +68,21 @@ const getFileType = (file: ProcessedFiles[string]): string => {
 };
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+  console.log('OCR API: Received request with method:', req.method);
+  
+  // Set CORS headers for all responses
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
   if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
+    console.error(`OCR API: Method ${req.method} not allowed`);
+    return res.status(405).json({ success: false, message: `Method ${req.method} not allowed` });
   }
 
   console.log('OCR API: Processing file upload request, headers:', {
@@ -101,37 +117,56 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     console.log('Parsing form data...');
     const formData: { fields: Fields; files: ProcessedFiles } = await new Promise((resolve, reject) => {
-      form.parse(req, (err, fields, files) => {
-        if (err) {
-          console.error('Form parsing error:', err);
-          if (err.code === 1009) {
-            return reject(new Error(`File is too large. Maximum size is ${MAX_FILE_SIZE / (1024 * 1024)}MB`));
+      let attemptCount = 0;
+      const maxAttempts = 3;
+      
+      const attemptParse = () => {
+        attemptCount++;
+        console.log(`Form parsing attempt ${attemptCount}...`);
+        
+        form.parse(req, (err, fields, files) => {
+          if (err) {
+            console.error(`Form parsing error (attempt ${attemptCount}):`, err);
+            if (err.code === 1009) {
+              return reject(new Error(`File is too large. Maximum size is ${MAX_FILE_SIZE / (1024 * 1024)}MB`));
+            }
+            
+            // If we haven't reached max attempts, try again
+            if (attemptCount < maxAttempts) {
+              console.log(`Retrying form parse (attempt ${attemptCount + 1})...`);
+              setTimeout(attemptParse, 1000); // Wait 1 second before retrying
+              return;
+            }
+            
+            return reject(err);
           }
-          return reject(err);
-        }
-
-        // Log detailed information about parsed files
-        const fileKeys = Object.keys(files);
-        console.log('Form parsed successfully, file keys:', fileKeys);
-
-        if (fileKeys.length === 0) {
-          return reject(new Error('No files found in the form data'));
-        }
-
-        const fileDetails = Object.entries(files).map(([key, file]) => {
-          const fileObj = Array.isArray(file) ? file[0] : file;
-          return {
-            key,
-            filepath: fileObj?.filepath || 'missing',
-            filename: fileObj?.originalFilename || 'unnamed',
-            mimetype: fileObj?.mimetype || 'unknown',
-            size: fileObj?.size || 0
-          };
+  
+          // Log detailed information about parsed files
+          const fileKeys = Object.keys(files);
+          console.log('Form parsed successfully, file keys:', fileKeys);
+  
+          if (fileKeys.length === 0) {
+            return reject(new Error('No files found in the form data'));
+          }
+  
+          const fileDetails = Object.entries(files).map(([key, file]) => {
+            const fileObj = Array.isArray(file) ? file[0] : file;
+            return {
+              key,
+              filepath: fileObj?.filepath || 'missing',
+              filename: fileObj?.originalFilename || 'unnamed',
+              mimetype: fileObj?.mimetype || 'unknown',
+              size: fileObj?.size || 0
+            };
+          });
+  
+          console.log('Parsed files details:', JSON.stringify(fileDetails, null, 2));
+          resolve({ fields, files: files as unknown as ProcessedFiles });
         });
-
-        console.log('Parsed files details:', JSON.stringify(fileDetails, null, 2));
-        resolve({ fields, files: files as unknown as ProcessedFiles });
-      });
+      };
+      
+      // Start the first attempt
+      attemptParse();
     });
 
     // Get agent ID from request cookies or query params, ensuring it's a string

@@ -36,7 +36,7 @@ const Step6_ContactInfo = forwardRef<Step6Ref, Step6Props>(({ initialValues, onS
         validationSchema={step6Schema}
         onSubmit={onSubmit}
       >
-        {({ values, isValid: _isValid }) => (
+        {({ values }) => (
           <Form>
             <div className="grid grid-cols-1 gap-4">
               <div className="mb-4">

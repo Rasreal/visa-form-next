@@ -43,16 +43,26 @@ const Step2_DocumentUpload = forwardRef<Step2Ref, Step2Props>(({
   }));
 
   const handleDocumentExtract = (documentType: string, data: ExtractedDocumentData, filePath?: string) => {
-    setFormValues((prev) => ({
-      ...prev,
-      ...data,
-    }));
+    console.log(`Document ${documentType} extracted successfully:`, { data, filePath });
+    
+    // Only update form values if data is actually extracted
+    if (data && Object.keys(data).length > 0) {
+      setFormValues((prev) => ({
+        ...prev,
+        ...data,
+      }));
+    }
 
-    // Track the uploaded file with its actual path from Supabase storage
-    setUploadedFiles({
-      ...uploadedFiles,
-      [documentType]: filePath || 'uploaded',
-    });
+    // Even if OCR fails to extract data, track that the file was uploaded successfully
+    if (filePath) {
+      setUploadedFiles({
+        ...uploadedFiles,
+        [documentType]: filePath,
+      });
+      
+      // Show success message
+      setIsDocumentUploaded(true);
+    }
   };
 
   return (
@@ -64,6 +74,23 @@ const Step2_DocumentUpload = forwardRef<Step2Ref, Step2Props>(({
         <br />
         <strong>Примечание:</strong> Достаточно указать номер паспорта ИЛИ номер удостоверения личности.
       </p>
+
+      {isDocumentUploaded && (
+        <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-green-700">
+                Документ успешно загружен! Вы можете продолжить после заполнения данных.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mb-6">
         <FileUpload
@@ -89,7 +116,10 @@ const Step2_DocumentUpload = forwardRef<Step2Ref, Step2Props>(({
             </div>
             <div className="ml-3">
               <p className="text-sm text-yellow-700">
-                Необходимо загрузить хотя бы один документ для перехода к следующему шагу.
+                <strong>Требуется:</strong> Необходимо загрузить хотя бы один документ для перехода к следующему шагу.
+              </p>
+              <p className="text-sm text-yellow-700 mt-1">
+                Если возникает ошибка при загрузке, попробуйте уменьшить размер файла или выбрать другой формат (JPG вместо PDF).
               </p>
             </div>
           </div>

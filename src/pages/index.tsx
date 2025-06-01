@@ -349,7 +349,7 @@ export default function Home() {
     }, 1000); // Save after 1 second of inactivity
 
     setAutoSaveTimeout(timeout);
-  }, [agentId, uploadedFiles, setIsAutoSaving, setLastSaved, setAutoSaveTimeout]);
+  }, [agentId, uploadedFiles]);
 
   // Helper function to update form data and trigger auto-save
   const updateFormData = (newData: Partial<VisaFormData>) => {
@@ -358,7 +358,7 @@ export default function Home() {
         ...prevFormData,
         ...newData,
       };
-  return updatedFormData;
+      return updatedFormData;
     });
   };
 
@@ -382,7 +382,7 @@ export default function Home() {
         debouncedAutoSave(formData, step);
       }
     }
-  }, [formData, agentId, step, isLoading, uploadedFiles, debouncedAutoSave]);
+  }, [formData, agentId, step, isLoading, debouncedAutoSave]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -479,7 +479,7 @@ export default function Home() {
 
       // Save immediately when moving to next step
       const updatedFormData = { ...formData, ...stepData };
-await saveFormData(updatedFormData, agentId, step + 1, uploadedFiles);
+      await saveFormData(updatedFormData, agentId, step + 1, uploadedFiles);
       handleNext();
     } catch (error) {
       console.error('Failed to save form data:', error);
@@ -493,7 +493,7 @@ await saveFormData(updatedFormData, agentId, step + 1, uploadedFiles);
 
       // Save immediately when moving to next step
       const updatedFormData = { ...formData, ...stepData };
-    await saveFormData(updatedFormData, agentId, step + 1, uploadedFiles);
+      await saveFormData(updatedFormData, agentId, step + 1, uploadedFiles);
       handleNext();
     } catch (error) {
       console.error('Failed to save form data:', error);

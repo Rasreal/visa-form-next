@@ -36,7 +36,7 @@ const Step7_FamilyInfo = forwardRef<Step7Ref, Step7Props>(({ initialValues, onSu
         validationSchema={step7Schema}
         onSubmit={onSubmit}
       >
-        {({ values, isValid: _isValid }) => (
+        {({ values }) => (
           <Form>
             <div className="grid grid-cols-1 gap-4">
               {/* Информация о супруге */}
@@ -56,7 +56,7 @@ const Step7_FamilyInfo = forwardRef<Step7Ref, Step7Props>(({ initialValues, onSu
                     </label>
                   </div>
                   <div className="text-sm text-gray-500 italic">
-                    Примечание: Если вы ранее выбрали &ldquo;Незамужем/холост&rdquo;, но хотите указать информацию о бывшем супруге, 
+                    Примечание: Если вы ранее выбрали &quot;Незамужем/холост&quot;, но хотите указать информацию о бывшем супруге, 
                     пожалуйста, отметьте этот пункт.
                   </div>
                 </div>
@@ -499,6 +499,9 @@ const Step7_FamilyInfo = forwardRef<Step7Ref, Step7Props>(({ initialValues, onSu
               </div>
 
             </div>
+
+            {/* Hidden submit button - will be triggered by StepWrapper */}
+            <button type="submit" style={{ display: 'none' }} />
           </Form>
         )}
       </Formik>

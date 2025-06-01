@@ -36,12 +36,12 @@ const Step1_Welcome = forwardRef<Step1Ref, Step1Props>(({ initialValues, onSubmi
     isValid: formikRef.current?.isValid ?? false,
   }));
   
-  // Update selectedCountry when formikRef.current.values.visaDestination changes
+  // Move useEffect outside of render and avoid using formikRef.current as a dependency
   useEffect(() => {
-    if (formikRef.current?.values.visaDestination) {
-      setSelectedCountry(formikRef.current.values.visaDestination);
+    if (initialValues.visaDestination) {
+      setSelectedCountry(initialValues.visaDestination);
     }
-  }, [formikRef.current?.values?.visaDestination]);
+  }, [initialValues.visaDestination]);
 
   return (
     <div className="text-center">
@@ -57,7 +57,7 @@ const Step1_Welcome = forwardRef<Step1Ref, Step1Props>(({ initialValues, onSubmi
         validationSchema={step1Schema}
         onSubmit={onSubmit}
       >
-        {({ setFieldValue, isValid: _isValid, dirty: _dirty }) => (
+        {({ setFieldValue }) => (
           <Form>
             <div className="max-w-md mx-auto">
               <Field
