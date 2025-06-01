@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { IncomingForm, Fields, Files } from 'formidable';
+import { IncomingForm, Fields } from 'formidable';
 import fs from 'fs';
 
 // This enables file uploads in the API route

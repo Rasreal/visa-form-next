@@ -34,7 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Check temp directory
     const tempDir = process.env.VERCEL ? '/tmp' : path.join(process.cwd(), 'tmp');
-    let tempDirStatus = {
+    const tempDirStatus = {
       path: tempDir,
       exists: false,
       isWritable: false,
